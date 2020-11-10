@@ -149,7 +149,23 @@ if (run==FALSE&AI==FALSE) {
         int_t <- crossprod(M,(rep(1,length(Y))))
         
         if(calculate.effect.size == TRUE) {
-            models1 <- apply(X_ok,2,function(x){summary(lm(Y_t~0+int_t+crossprod(M,x)))$coeff[2,]})
+### edit to handle missing values of the SNP matrix
+          mod<-function(x){
+            if (length(which(is.na(x))>0)) {
+              mv<-which(is.na(x))
+              Y_t_<-Y_t[-mv]
+              int_t_<-int_t[-mv,]
+              M_<-M[-mv,-mv]
+              x_<-x[-mv]
+            } else {
+              Y_t_<-Y_t
+              int_t_<-int_t
+              M_<-M
+              x_<-x
+            }
+            summary(lm(Y_t_~0+int_t_+crossprod(M_,x_)))$coeff[2,]
+          }  
+          models1 <- apply(X_ok,2,mod)
             bet <- models1[1,]
             se <- models1[2,]
 ### variance explained from betas veb  
