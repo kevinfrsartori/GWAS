@@ -183,9 +183,23 @@ if (run==FALSE&AI==FALSE) {
             RSS_env <- rep(sum(lsfit(int_t,Y_t,intercept = FALSE)$residuals^2),ncol(X_ok))
             
             if(mc == FALSE) {
+              namod<-function(x){
+                if (length(which(is.na(x))>0)) {
+                  mv<-which(is.na(x))
+                  Y_t_<-Y_t[-mv]
+                  int_t_<-int_t[-mv,]
+                  M_<-M[-mv,-mv]
+                  x_<-x[-mv]
+                } else {
+                  Y_t_<-Y_t
+                  int_t_<-int_t
+                  M_<-M
+                  x_<-x
+                }
+                sum(lsfit(cbind(int_t_,crossprod(M_,x_)),Y_t_,intercept = FALSE)$residuals^2)
+              }
+              R1_full <- apply(X_ok,2,namod)
               
-                R1_full <- apply(X_ok,2,function(x){sum(lsfit(cbind(int_t,crossprod(M,x)),Y_t,intercept = FALSE)$residuals^2)})
-            
             } else {
                 require(doMC)
                 if(cores == "all") { 
@@ -194,8 +208,20 @@ if (run==FALSE&AI==FALSE) {
                     registerDoMC(cores)
                 }
                     R1_full <- foreach(i = 1:ncol(X_ok), .combine = "c") %dopar%
-                    sum(lsfit(cbind(int_t,crossprod(M,X_ok[,i])),Y_t,intercept = FALSE)$residuals^2)
-            
+                      if (length(which(is.na(X_ok[,i]))>0)) {
+                        mv<-which(is.na(X_ok[,i]))
+                        Y_t_<-Y_t[-mv]
+                        int_t_<-int_t[-mv,]
+                        M_<-M[-mv,-mv]
+                        X_oki<-X_ok[,i][-mv]
+                      } else {
+                        Y_t_<-Y_t
+                        int_t_<-int_t
+                        M_<-M
+                        X_oki<-X_ok[,i]
+                      }
+                    sum(lsfit(cbind(int_t_,crossprod(M_,X_oki)),Y_t_,intercept = FALSE)$residuals^2)
+                    
             }
             
             pa<-nrow(Y1)
